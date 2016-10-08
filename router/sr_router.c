@@ -79,6 +79,22 @@ void sr_handlepacket(struct sr_instance* sr,
   printf("*** -> Received packet of length %d \n",len);
 
   /* fill in code here */
+  
+    /* 
+  1. determine if IP packet or ARP packet (ethertype: IPv4 - 0x0800, ARP - 0x0806)
+  2a. if IP packet, determine if destination interface is in routing table
+  	3a. if in routing table (for me), determine if ICMP or TCP/UDP request
+  		 4a. if ICMP echo request, send echo reply
+  		 4b. if TCP/UDP, send ICMP port unreachable message
+  	3b. if not in routing table (not for me), do LPM on routing table and find match
+  		 4a. if no match, send ICMP net unreachable message 
+ 		 4b. if match, check ARP cache for next-hop MAC address which corresponds to the matched IP
+  				5a. if found MAC, send packet
+  				5b. if no MAC, send ARP request to IP (if not sent within last second) and add packet to ARP request queue
+   2b. if ARP packet, determine if reply/request
+   	3a. if reply, cache and go through request queue, send outstanding packets
+   	3b. if request, construct ARP reply and send back?
+  */
 
 }/* end sr_ForwardPacket */
 
