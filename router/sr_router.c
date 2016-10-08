@@ -77,6 +77,11 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(interface);
 
   printf("*** -> Received packet of length %d \n",len);
+  printf("Interface is: %d \n", *interface);
+  printf("Packet: %d \n", *packet);
+  printf("Packet 1: %d \n", *(packet + 1));
+  printf("Packet 2: %d \n", *(packet + 2));
+  printf("Packet 3: %d \n", *(packet + 3));
 
   /* fill in code here */
   
@@ -95,6 +100,10 @@ void sr_handlepacket(struct sr_instance* sr,
    	3a. if reply, cache and go through request queue, send outstanding packets
    	3b. if request, construct ARP reply and send back?
   */
+  
+  
+  
+  
 
 }/* end sr_ForwardPacket */
 
