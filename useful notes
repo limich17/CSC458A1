@@ -3,6 +3,7 @@ ssh -p 8022 mininet@localhost
 
 
 cd ~/cs144_lab3/
+cd ~/csc458a1/
 
 
 To connect to mininet, do this:
