@@ -102,7 +102,11 @@ void sr_handlepacket(struct sr_instance* sr,
   */
 
  
-  struct sr_ethernet_hdr *eth_header;
+  struct sr_ethernet_hdr *eth_header () {
+    /*ether_dhost = null;
+    ether_shost = null;
+    ether_type = null;*/
+  };
 
   eth_header = malloc(sizeof(struct sr_ethernet_hdr *));
 
@@ -135,7 +139,7 @@ void sr_handlepacket(struct sr_instance* sr,
 
   /* is ARP packet */
   if (eth_type == ethertype_arp) {
-    /*struct sr_arp_hdr *arp_header;
+    struct sr_arp_hdr *arp_header;
 
 
     printf("THIS IS ARP \n");
@@ -149,7 +153,7 @@ void sr_handlepacket(struct sr_instance* sr,
     memcpy(arp_header->ar_sha, packet + 22, 6);
     memcpy(&(arp_header->ar_sip), packet + 28, 4);
     memcpy(arp_header->ar_tha, packet + 32, 6);
-    memcpy(&(arp_header->ar_tip), packet + 38, 4); */
+    memcpy(&(arp_header->ar_tip), packet + 38, 4);
   } 
   /* is IP packet */
   else {
