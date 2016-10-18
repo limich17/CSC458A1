@@ -29,24 +29,24 @@
  * Method: sr_get_interface
  * Scope: Global
  *
- * Given an interface name return the interface record or 0 if it doesn't
+ * Given an interface ip return the interface record or 0 if it doesn't
  * exist.
  *
  *---------------------------------------------------------------------*/
 
-struct sr_if* sr_get_interface(struct sr_instance* sr, const char* name)
+struct sr_if* sr_get_interface(struct sr_instance* sr, uint32_t ip)
 {
     struct sr_if* if_walker = 0;
 
     /* -- REQUIRES -- */
-    assert(name);
+    assert(ip);
     assert(sr);
 
     if_walker = sr->if_list;
 
     while(if_walker)
     {
-       if(!strncmp(if_walker->name,name,sr_IFACE_NAMELEN))
+       if(if_walker->ip == ip)
         { return if_walker; }
         if_walker = if_walker->next;
     }

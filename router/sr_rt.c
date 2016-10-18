@@ -22,6 +22,22 @@
 #include "sr_rt.h"
 #include "sr_router.h"
 
+struct sr_rt *sr_find_lpm(struct sr_rt *rt, struct in_addr dest_ip) {
+    struct sr_rt *match = NULL;
+
+    while (rt) {
+        if ((dest_ip.s_addr & rt->mask.s_addr) == rt->dest.s_addr) {
+            if (!match || (match && (rt->mask.s_addr > match->mask.s_addr))) {
+                match = rt;
+            }
+        }
+
+        rt = rt->next;
+    }
+
+    return match;
+}
+
 /*---------------------------------------------------------------------
  * Method:
  *

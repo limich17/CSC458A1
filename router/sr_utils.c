@@ -19,6 +19,14 @@ uint16_t cksum (const void *_data, int len) {
   return sum ? sum : 0xffff;
 }
 
+uint16_t calc_ip_cksum(struct sr_ip_hdr *ip_header) {
+  uint16_t newCksum;
+
+  ip_header->ip_sum = 0;
+  newCksum = cksum(ip_header, sizeof(sr_ip_hdr_t));
+
+  return htons(newCksum);
+}
 
 uint16_t ethertype(uint8_t *buf) {
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t *)buf;

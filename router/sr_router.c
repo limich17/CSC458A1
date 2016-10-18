@@ -101,62 +101,50 @@ void sr_handlepacket(struct sr_instance* sr,
    	3b. if request, construct ARP reply and send back?
   */
 
- 
-  struct sr_ethernet_hdr *eth_header () {
-    /*ether_dhost = null;
-    ether_shost = null;
-    ether_type = null;*/
-  };
+  print_hdr_eth(packet);
 
-  eth_header = malloc(sizeof(struct sr_ethernet_hdr *));
+  struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) packet;
 
-  memcpy(eth_header->ether_dhost, packet, 6);
-  memcpy(eth_header->ether_shost, packet + 6, 6);
-  memcpy(&(eth_header->ether_type), packet + 12, 2);
-
-  uint16_t eth_type = htons(eth_header->ether_type);
-
-  /* ---------- PRINT ETHERNET HEADER ------------- */
-  /*
-  printf("eth_header.ether_type: %#06X\n", eth_type);
-  
-  int i, j;
-
-  printf("eth_header->ether_dhost: ");
-  for (i = 0; i < 6; i++) {
-    printf("%0X", eth_header->ether_dhost[i]);
-  }
-  printf("\n");
-
-  printf("eth_header->ether_shost: ");
-  for (j = 0; j < 6; j++) { 
-    printf("%0X", eth_header->ether_shost[j]);
-  }
-  printf("\n");
-
-  printf("equal? %d\n", eth_type == ethertype_arp);
-  */
+  uint16_t eth_type = ethertype(eth_header);
 
   /* is ARP packet */
   if (eth_type == ethertype_arp) {
-    struct sr_arp_hdr *arp_header;
 
-
-    printf("THIS IS ARP \n");
-    arp_header = malloc(sizeof(struct sr_arp_hdr *));
-
-    memcpy(&(arp_header->ar_hrd), packet + 14, 2);
-    memcpy(&(arp_header->ar_pro), packet + 16, 2);
-    memcpy(&(arp_header->ar_hln), packet + 18, 1);
-    memcpy(&(arp_header->ar_pln), packet + 19, 1);
-    memcpy(&(arp_header->ar_op), packet + 20, 2);
-    memcpy(arp_header->ar_sha, packet + 22, 6);
-    memcpy(&(arp_header->ar_sip), packet + 28, 4);
-    memcpy(arp_header->ar_tha, packet + 32, 6);
-    memcpy(&(arp_header->ar_tip), packet + 38, 4);
   } 
   /* is IP packet */
   else {
+    print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
+
+    struct sr_ip_hdr *ip_header = (struct sr_ip_hdr *) (packet + sizeof(sr_ethernet_hdr_t));
+
+    /* sanity check packet (length, checksum) */
+
+    /* find the interface */
+    /* destination is not one of our interfaces */
+    if (sr_get_interface(sr, ip_header->ip_dst) == 0) {
+      /* decrement TTL by 1  */
+      ip_header->ip_ttl = ip_header->ip_ttl - 1;
+      if (ip_header->ip_ttl < 1) {
+        /* TTL is 0 */
+        /* send ICMP error */
+      } else {
+        /* recompute checksum over modified header */
+        ip_header->ip_sum = calc_ip_cksum(ip_header);
+        /* do LPM with dest IP address */
+        struct sr_rt *matchResult = sr_find_lpm(sr->routing_table, ip_header->ip_dst);
+        if (!matchResult) {
+          /* no match found, send ICMP net unreachable */
+        } else {
+          /* match found, check ARP cache */
+
+        }
+      }
+
+    } else {
+      /* destination is one of our interfaces */
+    }
+
+
 
   }
 
