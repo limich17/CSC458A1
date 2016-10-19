@@ -12,7 +12,9 @@
  **********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 
 #include "sr_if.h"
@@ -50,6 +52,8 @@ void sr_init(struct sr_instance* sr)
     pthread_create(&thread, &(sr->attr), sr_arpcache_timeout, sr);
     
     /* Add initialization code here! */
+
+    
 
 } /* -- sr_init -- */
 
@@ -95,6 +99,7 @@ struct sr_if* sr_getAddress(struct sr_instance* sr,
  * interface are passed in as parameters. The packet is complete with
  * ethernet headers.
  *
+
  * Note: Both the packet buffer and the character's memory are handled
  * by sr_vns_comm.c that means do NOT delete either.  Make a copy of the
  * packet instead if you intend to keep it around beyond the scope of
@@ -314,5 +319,63 @@ struct sr_instance
   
   
 
-}/* end sr_ForwardPacket */
+ 
+  struct sr_ethernet_hdr *eth_header () {
+    /*ether_dhost = null;
+    ether_shost = null;
+    ether_type = null;*/
+  };
 
+  eth_header = malloc(sizeof(struct sr_ethernet_hdr *));
+
+  memcpy(eth_header->ether_dhost, packet, 6);
+  memcpy(eth_header->ether_shost, packet + 6, 6);
+  memcpy(&(eth_header->ether_type), packet + 12, 2);
+
+  uint16_t eth_type = htons(eth_header->ether_type);
+
+  /* ---------- PRINT ETHERNET HEADER ------------- */
+  /*
+  printf("eth_header.ether_type: %#06X\n", eth_type);
+  
+  int i, j;
+
+  printf("eth_header->ether_dhost: ");
+  for (i = 0; i < 6; i++) {
+    printf("%0X", eth_header->ether_dhost[i]);
+  }
+  printf("\n");
+
+  printf("eth_header->ether_shost: ");
+  for (j = 0; j < 6; j++) { 
+    printf("%0X", eth_header->ether_shost[j]);
+  }
+  printf("\n");
+
+  printf("equal? %d\n", eth_type == ethertype_arp);
+  */
+
+  /* is ARP packet */
+  if (eth_type == ethertype_arp) {
+    struct sr_arp_hdr *arp_header;
+
+
+    printf("THIS IS ARP \n");
+    arp_header = malloc(sizeof(struct sr_arp_hdr *));
+
+    memcpy(&(arp_header->ar_hrd), packet + 14, 2);
+    memcpy(&(arp_header->ar_pro), packet + 16, 2);
+    memcpy(&(arp_header->ar_hln), packet + 18, 1);
+    memcpy(&(arp_header->ar_pln), packet + 19, 1);
+    memcpy(&(arp_header->ar_op), packet + 20, 2);
+    memcpy(arp_header->ar_sha, packet + 22, 6);
+    memcpy(&(arp_header->ar_sip), packet + 28, 4);
+    memcpy(arp_header->ar_tha, packet + 32, 6);
+    memcpy(&(arp_header->ar_tip), packet + 38, 4);
+  } 
+  /* is IP packet */
+  else {
+
+  }
+
+}
