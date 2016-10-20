@@ -34,7 +34,27 @@
  *
  *---------------------------------------------------------------------*/
 
-struct sr_if* sr_get_interface(struct sr_instance* sr, uint32_t ip)
+struct sr_if* sr_get_interface(struct sr_instance* sr, const char* name)
+{
+    struct sr_if* if_walker = 0;
+
+    /* -- REQUIRES -- */
+    assert(name);
+    assert(sr);
+
+    if_walker = sr->if_list;
+
+    while(if_walker)
+    {
+       if(!strncmp(if_walker->name,name,sr_IFACE_NAMELEN))
+        { return if_walker; }
+        if_walker = if_walker->next;
+    }
+
+    return 0;
+} /* -- sr_get_interface -- */
+
+struct sr_if* sr_get_interface_by_ip(struct sr_instance* sr, uint32_t ip)
 {
     struct sr_if* if_walker = 0;
 
@@ -44,15 +64,19 @@ struct sr_if* sr_get_interface(struct sr_instance* sr, uint32_t ip)
 
     if_walker = sr->if_list;
 
-    while(if_walker)
+    while(if_walker->next)
     {
-       if(if_walker->ip == ip)
-        { return if_walker; }
+	/* printf("if_walker->ip: %0X \n", if_walker->ip); */
+	/* printf("ip: %0X \n", ip); */
+       if(if_walker->ip == ip) { 
+	 printf("match: %s \n", if_walker->name);
+	 return if_walker; 
+       }
         if_walker = if_walker->next;
     }
 
     return 0;
-} /* -- sr_get_interface -- */
+} /* -- sr_get_interface_by_ip -- */
 
 /*--------------------------------------------------------------------- 
  * Method: sr_add_interface(..)

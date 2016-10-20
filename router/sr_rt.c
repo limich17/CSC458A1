@@ -22,12 +22,16 @@
 #include "sr_rt.h"
 #include "sr_router.h"
 
-struct sr_rt *sr_find_lpm(struct sr_rt *rt, struct in_addr dest_ip) {
+struct sr_rt *sr_find_lpm(struct sr_rt *rt, uint32_t dest_ip) {
     struct sr_rt *match = NULL;
 
     while (rt) {
-        if ((dest_ip.s_addr & rt->mask.s_addr) == rt->dest.s_addr) {
+       if ((dest_ip & rt->mask.s_addr) == rt->dest.s_addr) {
             if (!match || (match && (rt->mask.s_addr > match->mask.s_addr))) {
+		char str[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &rt->dest, str, INET_ADDRSTRLEN);
+		printf("rt->dest.s_addr: %s \n", str);
+		sr_print_routing_entry(rt);
                 match = rt;
             }
         }
@@ -35,6 +39,12 @@ struct sr_rt *sr_find_lpm(struct sr_rt *rt, struct in_addr dest_ip) {
         rt = rt->next;
     }
 
+    if (match) {
+      printf("lpm match is: \n");
+      sr_print_routing_entry(match);
+    } else {
+      printf("no lpm match here\n");
+    }
     return match;
 }
 

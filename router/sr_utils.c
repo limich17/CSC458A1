@@ -28,6 +28,14 @@ uint16_t calc_ip_cksum(struct sr_ip_hdr *ip_header) {
   return htons(newCksum);
 }
 
+int validate_packet(struct sr_ip_hdr *ip_header, int len) {
+  if (ip_header->ip_len > ip_header->ip_hl || cksum(ip_header, sizeof(sr_ip_hdr_t) == 0xffff || ip_header->ip_v != 4 || len < 20 || ip_header->ip_hl < 5)) {
+    return 0;
+  }
+
+  return 1;
+}
+
 uint16_t ethertype(uint8_t *buf) {
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t *)buf;
   return ntohs(ehdr->ether_type);

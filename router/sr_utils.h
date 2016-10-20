@@ -29,7 +29,8 @@
 #define SR_UTILS_H
 
 uint16_t cksum(const void *_data, int len);
-
+uint16_t calc_ip_cksum(struct sr_ip_hdr *);
+int validatePacket(struct sr_ip_hdr *, int len);
 uint16_t ethertype(uint8_t *buf);
 uint8_t ip_protocol(uint8_t *buf);
 
