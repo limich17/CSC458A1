@@ -12,9 +12,7 @@
  **********************************************************************/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
-#include <string.h>
 
 
 #include "sr_if.h"
@@ -23,6 +21,9 @@
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
+/*Added by student:*/
+#include "string.h"
+#include "stdlib.h"
 
 /*---------------------------------------------------------------------
  * Method: sr_init(void)
@@ -50,8 +51,6 @@ void sr_init(struct sr_instance* sr)
     
     /* Add initialization code here! */
 
-    
-
 } /* -- sr_init -- */
 
 /*---------------------------------------------------------------------
@@ -63,7 +62,6 @@ void sr_init(struct sr_instance* sr)
  * interface are passed in as parameters. The packet is complete with
  * ethernet headers.
  *
-
  * Note: Both the packet buffer and the character's memory are handled
  * by sr_vns_comm.c that means do NOT delete either.  Make a copy of the
  * packet instead if you intend to keep it around beyond the scope of
@@ -82,8 +80,12 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(interface);
 
   printf("*** -> Received packet of length %d \n",len);
-
-  /* fill in code here */
+  printf("Interface is: %d \n", *interface);
+  int i;
+  for (i = 0; i < len; i = i + 1 ){
+	  
+	  printf("Packet %d: %02X \n", i, *(packet + i));
+  }
   
     /* 
   1. determine if IP packet or ARP packet (ethertype: IPv4 - 0x0800, ARP - 0x0806)
@@ -240,7 +242,12 @@ void sr_handlepacket(struct sr_instance* sr,
     }
 
 
+=======
+  
+  
+  
+  
+>>>>>>> 27811d5c38849bd220cf424a24adc4d472b65b22
 
-  }
+}/* end sr_ForwardPacket */
 
-}
