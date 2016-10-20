@@ -53,39 +53,6 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
-
-
-/* end sr_ForwardPacket */
-struct sr_if* sr_getAddress(struct sr_instance* sr,
-        uint32_t target_ip/* lent */)
-{
-
-	struct sr_if* if_walker = 0;
-	printf("Here is our target IP address : \n");
-	print_addr_ip_int(target_ip);
-	printf("Here is our list of addresses in routing table: \n");
-	sr_print_if_list(sr);
-	
-    	assert(sr->if_list);
-    
-    	if_walker = sr->if_list;
-    	while(if_walker->next)
-    	{
-	if (if_walker->ip == target_ip){
-		printf("We found a full match! you want: %s \n", if_walker->name);
-		return if_walker;
-		
-	}
-	
-	if_walker = if_walker->next; 
-	
-	}
-
-	return 0;
-}
-
-
-
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
  * Scope:  Global
@@ -120,22 +87,31 @@ void sr_handlepacket(struct sr_instance* sr,
 	  printf("Packet %d: %02X \n", i, *(packet + i));
   }
   
-
-
-  sr_ethernet_hdr_t *ethHdr = (sr_ethernet_hdr_t *)packet;
-  
+    /* 
+  1. determine if IP packet or ARP packet (ethertype: IPv4 - 0x0800, ARP - 0x0806)
+  2a. if IP packet, determine if destination interface is in routing table
+  	3a. if in routing table (for me), determine if ICMP or TCP/UDP request
+  		 4a. if ICMP echo request, send echo reply
+  		 4b. if TCP/UDP, send ICMP port unreachable message
+  	3b. if not in routing table (not for me), do LPM on routing table and find match
+  		 4a. if no match, send ICMP net unreachable message 
+ 		 4b. if match, check ARP cache for next-hop MAC address which corresponds to the matched IP
+  				5a. if found MAC, send packet
+  				5b. if no MAC, send ARP request to IP (if not sent within last second) and add packet to ARP request queue
+   2b. if ARP packet, determine if reply/request
+   	3a. if reply, cache and go through request queue, send outstanding packets
+   	3b. if request, construct ARP reply and send back?
+  */
 
   print_hdr_eth(packet);
-  
-  
-  if (ntohs(ethHdr->ether_type) == ethertype_arp){ 
-  
-  
 
-	/* opCode = htons(opCode); */
+  struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) packet;
 
+  uint16_t eth_type = ethertype(packet);
 
-	  sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *)(packet + 14);
+  /* is ARP packet */
+  if (eth_type == ethertype_arp) {
+	sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *)(packet + 14);
 	  
 	  print_hdr_arp(packet + 14);
 
@@ -146,7 +122,7 @@ void sr_handlepacket(struct sr_instance* sr,
 	  	printf("It is a request ARP packet \n");
 		/* Go through each interface, look for a match*/
 		
-		struct sr_if* in_router = sr_getAddress(sr, arpHdr->ar_tip);
+		struct sr_if* in_router = sr_get_interface_by_ip(sr, arpHdr->ar_tip);
 		
 		if (in_router){
 			printf("Ok, the target is in our routing table, send this back: \n");
@@ -158,12 +134,10 @@ void sr_handlepacket(struct sr_instance* sr,
 		/*
 		sr_ethernet_hdr_t *ethReply;
 		sr_arp_hdr_t *arpReply;
-
 		
 		memcpy(ethReply->ether_dhost, packet + 6, 6);
   		memcpy(ethReply->ether_shost, in_router->addr, 6);
 		memcpy(&(ethReply->ether_type), packet + 12, 2);
-
 		
 		 	
 		memcpy(&(arpReply->ar_hrd), &(arpHdr->ar_hrd), 2);
@@ -227,95 +201,53 @@ void sr_handlepacket(struct sr_instance* sr,
 	  if (ntohs(arpHdr->ar_op) == arp_op_reply){ 
 	
 		printf("It is a reply ARP packet \n");
-
 	  }
-	
-	
-	/*
-	
-{
-    unsigned short  ar_hrd;              format of hardware address   
-    unsigned short  ar_pro;              format of protocol address   
-    unsigned char   ar_hln;              length of hardware address   
-    unsigned char   ar_pln;              length of protocol address   
-    unsigned short  ar_op;               ARP opcode (command)         
-    unsigned char   ar_sha[ETHER_ADDR_LEN];    sender hardware address    
-    uint32_t        ar_sip;              sender IP address            
-    unsigned char   ar_tha[ETHER_ADDR_LEN];    target hardware address      
-    uint32_t        ar_tip;              target IP address            
-} __attribute__ ((packed)) ;
-	
-	
-	
-struct sr_instance
 
-    int  sockfd;    socket to server 
-    char user[32];  user name 
-    char host[32];  host name 
-    char template[30];  template name if any 
-    unsigned short topo_id;
-    struct sockaddr_in sr_addr;  address to server 
-    struct sr_if* if_list;  list of interfaces 
-    struct sr_rt* routing_table;  routing table 
-    struct sr_arpcache cache;    ARP cache 
-    pthread_attr_t attr;
-    FILE* logfile;
-};
-	
-	
-	
-	
-	
-	
-	
-	*/
-	
-	
+  } 
+  /* is IP packet */
+  else {
+    print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
 
-  }
-/*
-  printf("Custom print begin \n\n");
-  sr_print_if((struct sr_if*)interface);
-  sr_print_if_list(sr);
-  
-  printf("Custom print end \n\n");
-  
-  
-  Send packet free only
-  
-  printf("dhost: %s etherhost: %s: type: %02X \n" ,ethHdr->ether_dhost, ethHdr->ether_shost, ethHdr->ether_type);
-  memcpy(*packet, *ethHdr->ether_dhost, 6 );
-  
-  printf("dhost: %s etherhost: %s: type: %02X \n" ,ethHdr->ether_dhost, ethHdr->ether_shost, ethHdr->ether_type);
+    struct sr_ip_hdr *ip_header = (struct sr_ip_hdr *) (packet + sizeof(sr_ethernet_hdr_t));
+
+    /* sanity check packet (length, checksum) */
+    /* validatePacket(ip_header, len); */
+
+    /* find the interface */
+    /* destination is not one of our interfaces */
+    if (sr_get_interface_by_ip(sr, ip_header->ip_dst) == 0) {
+	printf("not for me \n");
+      /* decrement TTL by 1  */
+      ip_header->ip_ttl = ip_header->ip_ttl - 1;
+      if (ip_header->ip_ttl < 1) {
+        /* TTL is 0 */
+        /* send ICMP error */
+      } else {
+        /* recompute checksum over modified header */
+        ip_header->ip_sum = calc_ip_cksum(ip_header);
+        /* do LPM with dest IP address */
+        struct sr_rt *matchResult = sr_find_lpm(sr->routing_table, ip_header->ip_dst);
+        if (!matchResult) {
+	  printf("no lpm match found \n");
+          /* no match found, send ICMP net unreachable */
+        } else {
+          /* match found, check ARP cache */
+	  printf("lpm match found \n");
+        }
+      }
+
+    } else {
+      /* destination is one of our interfaces */
+	printf("for me");
+    }
 
 
-
-
-  struct sr_arp_hdr arpHdr;
-  */
-  
-
-  /* fill in code here */
-  
-    /* 
-  1. determine if IP packet or ARP packet (ethertype: IPv4 - 0x0800, ARP - 0x0806)
-  2a. if IP packet, determine if destination interface is in routing table
-  	3a. if in routing table (for me), determine if ICMP or TCP/UDP request
-  		 4a. if ICMP echo request, send echo reply
-  		 4b. if TCP/UDP, send ICMP port unreachable message
-  	3b. if not in routing table (not for me), do LPM on routing table and find match
-  		 4a. if no match, send ICMP net unreachable message 
- 		 4b. if match, check ARP cache for next-hop MAC address which corresponds to the matched IP
-  				5a. if found MAC, send packet
-  				5b. if no MAC, send ARP request to IP (if not sent within last second) and add packet to ARP request queue
-   2b. if ARP packet, determine if reply/request
-   	3a. if reply, cache and go through request queue, send outstanding packets
-   	3b. if request, construct ARP reply and send back?
-  */
+=======
   
   
   
   
+>>>>>>> 27811d5c38849bd220cf424a24adc4d472b65b22
 
 }/* end sr_ForwardPacket */
 
