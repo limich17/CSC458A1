@@ -155,6 +155,7 @@ void sr_handlepacket(struct sr_instance* sr,
 		
 		printf("size of packet: %lu \n", sizeof(packetReply));
 		printf("size of given buffer: %lu \n", sizeof(packet));	 
+		/*
 		sr_ethernet_hdr_t *ethReply;
 		sr_arp_hdr_t *arpReply;
 
@@ -163,7 +164,7 @@ void sr_handlepacket(struct sr_instance* sr,
   		memcpy(ethReply->ether_shost, in_router->addr, 6);
 		memcpy(&(ethReply->ether_type), packet + 12, 2);
 
-
+		
 		 	
 		memcpy(&(arpReply->ar_hrd), &(arpHdr->ar_hrd), 2);
 		memcpy(&(arpReply->ar_pro), &(arpHdr->ar_pro), 2);
@@ -180,10 +181,11 @@ void sr_handlepacket(struct sr_instance* sr,
 		print_hdr_eth((uint8_t *)ethReply);
 		print_hdr_arp((uint8_t *)arpReply);
 		
-		
-		
+		*/
+		enum sr_arp_opcode reply;
+		reply = htons(arp_op_reply);
   		
-		memcpy(packetReply, &(ethReply->ether_dhost), 6);
+		memcpy(packetReply + 0, packet + 6, 6);
 		memcpy(packetReply + 6, in_router->addr, 6);
 		memcpy(packetReply + 12, packet + 12, 2);
 		 	
@@ -191,12 +193,13 @@ void sr_handlepacket(struct sr_instance* sr,
 		memcpy(packetReply + 16, &(arpHdr->ar_pro), 2);
 		memcpy(packetReply + 18, &(arpHdr->ar_hln), 1);
 		memcpy(packetReply + 19, &(arpHdr->ar_pln), 1);
-		memcpy(packetReply + 20, &(arpReply->ar_op), 2);
+		
+		memcpy(packetReply + 20, &reply, 2);
 		
 		
 		memcpy(packetReply + 22, in_router->addr, ETHER_ADDR_LEN);
 		memcpy(packetReply + 22 + ETHER_ADDR_LEN, &(in_router->ip), 4);
-		memcpy(packetReply + 26 + ETHER_ADDR_LEN, &(ethReply->ether_dhost), ETHER_ADDR_LEN);
+		memcpy(packetReply + 26 + ETHER_ADDR_LEN, packet + 6, ETHER_ADDR_LEN);
 		memcpy(packetReply + 26 + (2 * ETHER_ADDR_LEN), &(arpHdr->ar_sip), 4);
 		
 		
@@ -205,11 +208,12 @@ void sr_handlepacket(struct sr_instance* sr,
 		printf("Now custom packet buffer: \n\n");
 		print_hdr_eth(packetReply);
 		print_hdr_arp(packetReply + 14);
-		printf(" \n\n");
+		printf("\n\n Now sending the packet! \n");
 		
 		
 		sr_send_packet(sr, packetReply, len,
                 (const char *)in_router);
+		free(packetReply);
 		
 	
 		}else{
@@ -223,9 +227,8 @@ void sr_handlepacket(struct sr_instance* sr,
 	  if (ntohs(arpHdr->ar_op) == arp_op_reply){ 
 	
 		printf("It is a reply ARP packet \n");
-	
+
 	  }
-	  
 	
 	
 	/*
@@ -270,9 +273,6 @@ struct sr_instance
 	
 
   }
-  
-  
-  
 /*
   printf("Custom print begin \n\n");
   sr_print_if((struct sr_if*)interface);
