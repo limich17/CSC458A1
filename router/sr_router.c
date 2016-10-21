@@ -101,11 +101,13 @@ void sr_handlepacket(struct sr_instance* sr,
    2b. if ARP packet, determine if reply/request
    	3a. if reply, cache and go through request queue, send outstanding packets
    	3b. if request, construct ARP reply and send back?
-  */
+  
 
-  print_hdr_eth(packet);
+  
 
   struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) packet;
+  */
+  print_hdr_eth(packet);
 
   uint16_t eth_type = ethertype(packet);
 
@@ -191,24 +193,52 @@ void sr_handlepacket(struct sr_instance* sr,
 		
 	
 		}else{
-			printf("Target not in our table.  \n");
+			printf("Target not in our table. Drop it safely (like its hot)  \n");
 		}
 	
 		
 
 	  }
-		
-	  if (ntohs(arpHdr->ar_op) == arp_op_reply){ 
+
+	  else if (ntohs(arpHdr->ar_op) == arp_op_reply){ 
 	
-		printf("It is a reply ARP packet \n");
+		struct sr_arpreq *replyReq;
+		printf("It is a reply ARP packet. Add to cache. Here is cache before add: \n");
+		
+		sr_arpcache_dump(&(sr->cache));
+		replyReq = sr_arpcache_insert(&(sr->cache),arpHdr->ar_sha, arpHdr->ar_sip);
+		printf("And after add\n");
+		sr_arpcache_dump(&(sr->cache));
+		
+		
+		/*Now go through request queue for this reply, send them all out */
+		if (replyReq){
+        		struct sr_packet *sendPacket, *nextPacket;
+        
+        		for (sendPacket = replyReq->packets; sendPacket; sendPacket = nextPacket) {
+            			nextPacket = sendPacket->next;
+            			if (sendPacket->buf){
+					sr_nexthop(sr, sendPacket->buf, sendPacket->len, arpHdr->ar_sha, sendPacket->iface);
+				}
+        		}
+		
+		
+		
+			sr_arpreq_destroy(&(sr->cache), replyReq);
+		} else{
+			printf("I got a reply for the below IP, but I have no packets for that IP in my queue: \n");
+			print_addr_ip_int(arpHdr->ar_sip);
+		}
+		
+		
 	  }
 
-  } 
+  }
   /* is IP packet */
   else {
     print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
 
-    struct sr_ip_hdr *ip_header = (struct sr_ip_hdr *) (packet + sizeof(sr_ethernet_hdr_t));
+    struct sr_ip_hdr* ip_header = (struct sr_ip_hdr *) (packet + sizeof(sr_ethernet_hdr_t));
 
     /* sanity check packet (length, checksum) */
     /* validatePacket(ip_header, len); */
@@ -225,6 +255,10 @@ void sr_handlepacket(struct sr_instance* sr,
       } else {
         /* recompute checksum over modified header */
         ip_header->ip_sum = calc_ip_cksum(ip_header);
+	
+	printf("\n now print it again after recalculating checksum and decrementing TTL:");
+	print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
+	
         /* do LPM with dest IP address */
         struct sr_rt *matchResult = sr_find_lpm(sr->routing_table, ip_header->ip_dst);
         if (!matchResult) {
@@ -233,6 +267,30 @@ void sr_handlepacket(struct sr_instance* sr,
         } else {
           /* match found, check ARP cache */
 	  printf("lpm match found \n");
+	  
+   	struct sr_arpentry* entry = sr_arpcache_lookup(&(sr->cache), ip_header->ip_dst);
+
+   	if (entry){
+	printf("I found the ICMP target ip in my cache! Sending it forward to next hop \n");
+	/* Send the ICMP now */
+	
+		sr_nexthop(sr, packet, len, entry->mac, matchResult->interface);
+	
+	
+	
+	
+       		}
+   	else{
+   		/* Must create an ARP request below. Calling quereq makes a new request. COPY PACKET WITH MEMCPY */
+		struct sr_arpreq *req;
+       		req = sr_arpcache_queuereq(&(sr->cache), ip_header->ip_dst, packet, len, matchResult->interface);
+		/* now send the req through a function. Keep sending it every second for 5 seconds: */
+       
+       		handle_arpreq(req); /* doesn't work yet */
+  	 }
+	  
+	  
+	  
         }
       }
 
@@ -242,12 +300,30 @@ void sr_handlepacket(struct sr_instance* sr,
     }
 
 
-=======
-  
-  
-  
-  
->>>>>>> 27811d5c38849bd220cf424a24adc4d472b65b22
+
+}
 
 }/* end sr_ForwardPacket */
+
+
+/* Send the packet to the given hardware address. Assume the packet already had its TTl decremented, and its checksum updated. Do not free the packet here  */
+void sr_nexthop(
+	struct sr_instance* sr, 
+	uint8_t * packet, 
+	unsigned int len, 
+	unsigned char mac_addr[ETHER_ADDR_LEN],
+	const char *iface)
+{
+  /* REQUIRES */
+  assert(sr);
+  assert(packet);
+  assert(len);
+  assert(mac_addr);
+  
+  memcpy(packet, mac_addr, 6);
+  sr_send_packet(sr, packet, len, iface); 
+  
+
+
+  }
 

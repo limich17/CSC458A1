@@ -11,6 +11,8 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 
+#include "sr_utils.h" /*  only to print IP, can remove later */
+
 /* 
   This function gets called every second. For each request sent out, we keep
   checking whether we should resend an request or destroy the arp request.
@@ -244,4 +246,43 @@ void *sr_arpcache_timeout(void *sr_ptr) {
     
     return NULL;
 }
+
+void handle_arpreq(struct sr_arpreq *req) {
+/*
+       if difftime(now, req->sent) > 1.0
+           if req->times_sent >= 5:
+               send icmp host unreachable to source addr of all pkts waiting
+                 on this request
+               arpreq_destroy(req)
+           else:
+               send arp request
+               req->sent = now
+               req->times_sent++
+
+*/
+printf("Testing, called handle_arpreq with this IP target: \n ");
+print_addr_ip_int(req->ip);
+
+
+
+/*
+
+struct sr_arpreq {
+    uint32_t ip;
+    time_t sent;                 Last time this ARP request was sent. You 
+                                   should update this. If the ARP request was 
+                                   never sent, will be 0. 
+    uint32_t times_sent;         Number of times this request was sent. You 
+                                   should update this. 
+    struct sr_packet *packets;   List of pkts waiting on this req to finish 
+    struct sr_arpreq *next;
+};
+
+*/
+
+
+}
+
+
+
 
