@@ -318,7 +318,7 @@ void sr_handlepacket(struct sr_instance* sr,
 	}
 	  
   }
-}
+
 }/* end sr_ForwardPacket */
 
 void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance *sr, uint8_t *packet, uint32_t dest) {

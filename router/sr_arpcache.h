@@ -142,7 +142,7 @@ void sr_arpcache_dump(struct sr_arpcache *cache);
 /* Added by student. This function takes a req and sends it, or sends ICMP
 error if the request has been sent too many times*/
 
-void handle_arpreq(struct sr_arpreq *req);
+void handle_arpreq(struct sr_arpreq *req, struct sr_instance *sr);
 
 /* You shouldn't have to call these methods--they're already called in the
    starter code for you. The init call is a constructor, the destroy call is
