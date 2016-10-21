@@ -62,14 +62,14 @@ struct sr_if* sr_get_interface_by_ip(struct sr_instance* sr, uint32_t ip)
     assert(ip);
     assert(sr);
 
+    print_addr_ip_int(htons(ip));
     if_walker = sr->if_list;
 
-    while(if_walker->next)
+    while(if_walker)
     {
-	/* printf("if_walker->ip: %0X \n", if_walker->ip); */
-	/* printf("ip: %0X \n", ip); */
+	print_addr_ip_int(htons(if_walker->ip));
        if(if_walker->ip == ip) { 
-	 printf("match: %s \n", if_walker->name);
+	 printf("found interface: %s \n", if_walker->name);
 	 return if_walker; 
        }
         if_walker = if_walker->next;

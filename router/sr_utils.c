@@ -21,20 +21,47 @@ uint16_t cksum (const void *_data, int len) {
 
 uint16_t calc_ip_cksum(struct sr_ip_hdr *ip_header) {
   uint16_t newCksum;
+  /* uint16_t currCksum; */
 
+  /* currCksum = ip_header->ip_sum; */
   ip_header->ip_sum = 0;
   newCksum = cksum(ip_header, sizeof(sr_ip_hdr_t));
+  /* ip_header->ip_sum = currCksum; */
 
   return htons(newCksum);
 }
 
-int validate_packet(struct sr_ip_hdr *ip_header, int len) {
+uint16_t calc_icmp_cksum(struct sr_icmp_hdr *icmp_header) {
+	uint16_t newCksum;
+  /* uint16_t currCksum; */
+
+  /* currCksum = icmp_header->icmp_sum; */
+	icmp_header->icmp_sum = 0;
+	newCksum = cksum(icmp_header, sizeof(sr_icmp_hdr_t));
+  /* icmp_header->icmp_sum = currCksum; */
+
+	return htons(newCksum);
+}
+
+uint16_t calc_icmp3_cksum(struct sr_icmp_t3_hdr *icmp3_header) {
+  uint16_t newCksum;
+  /* uint16_t currCksum; */
+
+  /* currCksum = icmp3_header->icmp_sum; */
+  icmp3_header->icmp_sum = 0;
+  newCksum = cksum(icmp3_header, sizeof(sr_icmp_hdr_t));
+  /* icmp3_header->icmp_sum = currCksum; */
+
+  return htons(newCksum);
+}
+
+/*int validate_packet(struct sr_ip_hdr *ip_header, int len) {
   if (ip_header->ip_len > ip_header->ip_hl || cksum(ip_header, sizeof(sr_ip_hdr_t) == 0xffff || ip_header->ip_v != 4 || len < 20 || ip_header->ip_hl < 5)) {
     return 0;
   }
 
   return 1;
-}
+}*/
 
 uint16_t ethertype(uint8_t *buf) {
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t *)buf;

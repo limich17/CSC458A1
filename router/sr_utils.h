@@ -30,6 +30,8 @@
 
 uint16_t cksum(const void *_data, int len);
 uint16_t calc_ip_cksum(struct sr_ip_hdr *);
+uint16_t calc_icmp_cksum(struct sr_icmp_hdr *);
+uint16_t calc_icmp3_cksum(struct sr_icmp_t3_hdr *);
 int validatePacket(struct sr_ip_hdr *, int len);
 uint16_t ethertype(uint8_t *buf);
 uint8_t ip_protocol(uint8_t *buf);

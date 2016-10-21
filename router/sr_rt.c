@@ -25,13 +25,12 @@
 struct sr_rt *sr_find_lpm(struct sr_rt *rt, uint32_t dest_ip) {
     struct sr_rt *match = NULL;
 
+	printf("dest_ip: %0X \n", htonl(dest_ip));
     while (rt) {
-       if ((dest_ip & rt->mask.s_addr) == rt->dest.s_addr) {
-            if (!match || (match && (rt->mask.s_addr > match->mask.s_addr))) {
-		char str[INET_ADDRSTRLEN];
-		inet_ntop(AF_INET, &rt->dest, str, INET_ADDRSTRLEN);
-		printf("rt->dest.s_addr: %s \n", str);
-		sr_print_routing_entry(rt);
+       if ((ntohl(dest_ip) & ntohl(rt->mask.s_addr)) == ntohl(rt->dest.s_addr)) {
+                printf("equal lpm\n");
+            if (!match || (match && (ntohl(rt->mask.s_addr) > ntohl(match->mask.s_addr)))) {
+                sr_print_routing_entry(rt);
                 match = rt;
             }
         }
