@@ -372,11 +372,14 @@ void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int le
 	struct sr_if *iface = sr_get_interface(sr, interface);
 	
   struct sr_ip_hdr *ip_header = (struct sr_ip_hdr *) (packet + sizeof(sr_ethernet_hdr_t));
+
+  uint32_t dest = ip_header->ip_dst;
+  
   ip_header->ip_id = 0;
   ip_header->ip_off = 0;
 	ip_header->ip_ttl = 64;
 	ip_header->ip_dst = ip_header->ip_src;
-	ip_header->ip_src = iface->ip;
+	ip_header->ip_src = dest;
   ip_header->ip_sum = calc_ip_cksum(ip_header);
 	
 	printf("given interface: %s \n", interface);
