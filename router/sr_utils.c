@@ -21,36 +21,38 @@ uint16_t cksum (const void *_data, int len) {
 
 uint16_t calc_ip_cksum(struct sr_ip_hdr *ip_header) {
   uint16_t newCksum;
-  /* uint16_t currCksum; */
+  uint16_t currCksum; 
 
-  /* currCksum = ip_header->ip_sum; */
+  currCksum = ip_header->ip_sum; 
   ip_header->ip_sum = 0;
   newCksum = cksum(ip_header, sizeof(sr_ip_hdr_t));
-  /* ip_header->ip_sum = currCksum; */
+  
+  ip_header->ip_sum = currCksum; 
 
   return htons(newCksum);
 }
 
 uint16_t calc_icmp_cksum(struct sr_icmp_hdr *icmp_header) {
 	uint16_t newCksum;
-  /* uint16_t currCksum; */
+  uint16_t currCksum;
 
-  /* currCksum = icmp_header->icmp_sum; */
+  currCksum = icmp_header->icmp_sum;
 	icmp_header->icmp_sum = 0;
 	newCksum = cksum(icmp_header, sizeof(sr_icmp_hdr_t));
-  /* icmp_header->icmp_sum = currCksum; */
+
+  icmp_header->icmp_sum = currCksum;
 
 	return htons(newCksum);
 }
 
 uint16_t calc_icmp3_cksum(struct sr_icmp_t3_hdr *icmp3_header) {
   uint16_t newCksum;
-  /* uint16_t currCksum; */
+  uint16_t currCksum; 
 
-  /* currCksum = icmp3_header->icmp_sum; */
+  currCksum = icmp3_header->icmp_sum; 
   icmp3_header->icmp_sum = 0;
   newCksum = cksum(icmp3_header, sizeof(sr_icmp_hdr_t));
-  /* icmp3_header->icmp_sum = currCksum; */
+  icmp3_header->icmp_sum = currCksum;
 
   return htons(newCksum);
 }
