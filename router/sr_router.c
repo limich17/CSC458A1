@@ -341,9 +341,7 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   struct sr_if *iface = sr_get_interface_by_ip(sr, ip_header->ip_dst);
   ip_header->ip_v = 4;
   ip_header->ip_hl = sizeof(sr_ip_hdr_t)/4;
-  ip_header->ip_id = 0;
-  ip_header->ip_off = 0;
-  ip_header->ip_ttl = 64;
+  ip_header->ip_ttl = 100;
   ip_header->ip_dst = dest;
   ip_header->ip_src = iface->ip;
   ip_header->ip_sum = calc_ip_cksum(ip_header);
@@ -364,10 +362,11 @@ void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int le
 	/*uint8_t *echo_reply = malloc(len);
 	echo_reply = packet;*/
 	
-  struct sr_icmp_hdr *icmp_header = (struct sr_icmp_hdr *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	int icmp_size = len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t);
+  	struct sr_icmp_hdr *icmp_header = (struct sr_icmp_hdr *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	icmp_header->icmp_type = 0;
 	icmp_header->icmp_code = 0;
-	icmp_header->icmp_sum = calc_icmp_cksum(icmp_header);
+	icmp_header->icmp_sum = calc_icmp_cksum(icmp_header, icmp_size);
 	
 	struct sr_if *iface = sr_get_interface(sr, interface);
 	
@@ -375,12 +374,10 @@ void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int le
 
   uint32_t dest = ip_header->ip_dst;
   
-  ip_header->ip_id = 0;
-  ip_header->ip_off = 0;
-	ip_header->ip_ttl = 64;
+	ip_header->ip_ttl = 100;
 	ip_header->ip_dst = ip_header->ip_src;
 	ip_header->ip_src = dest;
-  ip_header->ip_sum = calc_ip_cksum(ip_header);
+  	ip_header->ip_sum = calc_ip_cksum(ip_header);
 	
 	printf("given interface: %s \n", interface);
 
