@@ -80,6 +80,6 @@ void sr_nexthop(
 	uint8_t * packet, 
 	unsigned int len, 
 	unsigned char mac_addr[ETHER_ADDR_LEN],
-	const char *iface);
+	char *iface);
 
 #endif /* SR_ROUTER_H */
