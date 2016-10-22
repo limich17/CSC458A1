@@ -496,7 +496,8 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
 
 		sr_send_packet(sr, icmp_packet, len, interface);
 	
-	
+	    printf("before free packet \n");
+  		free(icmp_packet);
 	
     }
    	else{
@@ -513,13 +514,6 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
        
        		handle_arpreq(req, sr); /* doesn't work yet */
   	 }
-
-
-  printf("before send packet \n");
-  sr_send_packet(sr, icmp_packet, len, interface);
-
-  printf("before free packet \n");
-  free(icmp_packet);
 }
 
 void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int len, char *interface) {
