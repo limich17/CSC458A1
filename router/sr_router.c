@@ -321,29 +321,40 @@ void sr_handlepacket(struct sr_instance* sr,
 
 }/* end sr_ForwardPacket */
 
-void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance *sr, uint8_t *packet, uint32_t dest) {
+void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance *sr, uint8_t *packet) {
   /* get packet length */
-  unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t);
+  unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+  
+  printf("sizeof ethernet header: %lu \n", sizeof(sr_ethernet_hdr_t));
+  printf("sizeof ip header: %lu \n", sizeof(sr_ip_hdr_t));
+  printf("sizeof icmp_t3 header: %lu \n", sizeof(sr_icmp_t3_hdr_t));
   
   uint8_t *icmp_packet = malloc(len);
 
-  struct sr_icmp_t3_hdr *icmp3_header = (sr_icmp_t3_hdr_t *) (icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-  struct sr_ip_hdr *ip_header = (sr_ip_hdr_t *) (icmp_packet + sizeof(sr_ethernet_hdr_t));
+
   struct sr_ethernet_hdr *eth_header = (sr_ethernet_hdr_t *) icmp_packet;
+  struct sr_ip_hdr *ip_header = (sr_ip_hdr_t *) (icmp_packet + sizeof(sr_ethernet_hdr_t));
+  struct sr_icmp_t3_hdr *icmp3_header = (sr_icmp_t3_hdr_t *) (icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
   struct sr_ip_hdr *orig_ip_header = (sr_ip_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
+
+  printf("before icmp3_header set \n");
   icmp3_header->icmp_type = icmp_type;
   icmp3_header->icmp_code = icmp_code;
   memcpy(icmp3_header->data, orig_ip_header, 28);
   icmp3_header->icmp_sum = calc_icmp3_cksum(icmp3_header);
 
+  printf("before get interface \n");
   /* get interface */
-  struct sr_if *iface = sr_get_interface_by_ip(sr, ip_header->ip_dst);
+  //struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
+  /*if (iface == 0) {
+    
+  }*/
+ 
   ip_header->ip_v = 4;
   ip_header->ip_hl = sizeof(sr_ip_hdr_t)/4;
   ip_header->ip_ttl = 100;
-  ip_header->ip_dst = dest;
-  ip_header->ip_src = iface->ip;
+  ip_header->ip_dst = orig_ip_header->ip_src;
   ip_header->ip_sum = calc_ip_cksum(ip_header);
 
   printf("ip header: \n");
@@ -360,6 +371,8 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   printf("before send packet \n");
   sr_send_packet(sr, icmp_packet, len, iface->name);
 
+  printf("before free packet \n");
+  free(icmp_packet);
 }
 
 void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int len, char *interface) {
