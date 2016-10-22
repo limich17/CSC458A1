@@ -206,18 +206,36 @@ void sr_handlepacket(struct sr_instance* sr,
 		printf("It is a reply ARP packet. Add to cache. Here is cache before add: \n");
 		
 		sr_arpcache_dump(&(sr->cache));
+		
+		uint32_t sip = htonl(arpHdr->ar_sip);
+		
+		printf("Here is the source IP: \n");
+		print_addr_ip_int(arpHdr->ar_sip);
+		print_addr_ip_int(sip);
+		
+		
+		
 		replyReq = sr_arpcache_insert(&(sr->cache),arpHdr->ar_sha, arpHdr->ar_sip);
+		
+		
+		
 		printf("And after add\n");
+		
+		
+		
 		sr_arpcache_dump(&(sr->cache));
 		
 		
 		/*Now go through request queue for this reply, send them all out */
 		if (replyReq){
         		struct sr_packet *sendPacket, *nextPacket;
-        
+
         		for (sendPacket = replyReq->packets; sendPacket; sendPacket = nextPacket) {
             			nextPacket = sendPacket->next;
             			if (sendPacket->buf){
+
+				
+				
 					sr_nexthop(sr, sendPacket->buf, sendPacket->len, arpHdr->ar_sha, sendPacket->iface);
 				}
         		}
@@ -257,7 +275,7 @@ void sr_handlepacket(struct sr_instance* sr,
         /* recompute checksum over modified header */
         ip_header->ip_sum = calc_ip_cksum(ip_header);
 	
-	printf("\n now print it again after recalculating checksum and decrementing TTL:");
+	printf("\n now print it again after recalculating checksum and decrementing TTL: \n");
 	print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
 	
         /* do LPM with dest IP address */
@@ -270,8 +288,10 @@ void sr_handlepacket(struct sr_instance* sr,
           /* match found, check ARP cache */
 	  printf("lpm match found \n");
 	  
+	
+	  
    	struct sr_arpentry* entry = sr_arpcache_lookup(&(sr->cache), ip_header->ip_dst);
-
+	 
    	if (entry){
 	printf("I found the ICMP target ip in my cache! Sending it forward to next hop \n");
 	/* Send the ICMP now */
@@ -285,6 +305,12 @@ void sr_handlepacket(struct sr_instance* sr,
    	else{
    		/* Must create an ARP request below. Calling quereq makes a new request. COPY PACKET WITH MEMCPY */
 		struct sr_arpreq *req;
+	printf("I didn't find ICMP target. Putting it in my queue, and sending ARP request.\n");	
+		printf("\n\n\n");
+		
+		
+		
+
        		req = sr_arpcache_queuereq(&(sr->cache), ip_header->ip_dst, packet, len, matchResult->interface);
 		/* now send the req through a function. Keep sending it every second for 5 seconds: */
        
@@ -425,7 +451,7 @@ void sr_nexthop(
 	uint8_t * packet, 
 	unsigned int len, 
 	unsigned char mac_addr[ETHER_ADDR_LEN],
-	const char *iface)
+	char *iface)
 {
   /* REQUIRES */
   assert(sr);
@@ -433,7 +459,28 @@ void sr_nexthop(
   assert(len);
   assert(mac_addr);
   
+ struct sr_if *lpm_interface = sr_get_interface(sr, iface);
+ 
+ assert(lpm_interface);
+  
+printf("Sending below packet to next hop, packet of length %d \n", len);
+print_hdr_eth(packet);
+print_hdr_ip(packet + 14);
+				
+printf("To this interface: %s \n", iface);
+  printf("With this mac address: \n");
+  print_addr_eth(mac_addr);
+  
+  
   memcpy(packet, mac_addr, 6);
+  /* Also change source address */
+  memcpy(packet + 6, lpm_interface->addr, 6);
+  
+  printf("Here is packet after we wrote the mac address to it:\n");
+  print_hdr_eth(packet);
+  print_hdr_ip(packet + 14);
+				
+  
   sr_send_packet(sr, packet, len, iface); 
   
 

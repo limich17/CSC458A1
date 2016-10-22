@@ -10,6 +10,7 @@
 #include "sr_router.h"
 #include "sr_if.h"
 #include "sr_protocol.h"
+#include "sr_utils.h"
 
 /* 
   This function gets called every second. For each request sent out, we keep
@@ -68,9 +69,9 @@ void send_arp(struct sr_arpreq *request, struct sr_instance *state) {
     uint8_t *new_packet = (uint8_t *) malloc(packet_length);
     sr_ethernet_hdr_t *new_ethernet_header = (sr_ethernet_hdr_t *) new_packet;
 
-    memcpy(new_ethernet_header->ether_shost, target_interface, sizeof(sr_ethernet_hdr_t)); 
+    memcpy(new_ethernet_header->ether_shost, target_interface->addr, sizeof(sr_ethernet_hdr_t)); 
     
-    printf("--------------Sending ARP Packet--------------\n");
+    printf("--------------Sending ARP request--------------\n");
     int i;
     for (i = 0; i < ETHER_ADDR_LEN; i++) {
         new_ethernet_header->ether_dhost[i] = 255;
@@ -86,14 +87,23 @@ void send_arp(struct sr_arpreq *request, struct sr_instance *state) {
     }
     new_arp_header->ar_sip = target_interface->ip;
     new_arp_header->ar_tip = request->ip;
+    
+    
+    
     new_arp_header->ar_hln = ETHER_ADDR_LEN;
     new_arp_header->ar_pln = 4;
     new_arp_header->ar_hrd = htons(arp_hrd_ethernet);
     new_arp_header->ar_pro = htons(ethertype_ip);
     new_arp_header->ar_op = htons(arp_op_request); 
     
+    print_hdr_eth(new_packet);
+    print_hdr_arp(new_packet + 14);
+    
+    print_addr_eth(target_interface->addr);
+    
     memcpy(new_arp_header->ar_sha, target_interface->addr, ETHER_ADDR_LEN);
-
+    
+    print_addr_eth(new_arp_header->ar_sha);
 
     sr_send_packet(state, new_packet, packet_length, target_interface->name);
 
