@@ -270,6 +270,7 @@ void sr_handlepacket(struct sr_instance* sr,
       if (ip_header->ip_ttl < 1) {
         /* TTL is 0 */
         /* send ICMP error */
+	printf("Time...TO DIE \n");
         sr_send_icmp_error(11, 0, sr, packet);
       } else {
         /* recompute checksum over modified header */
@@ -284,6 +285,7 @@ void sr_handlepacket(struct sr_instance* sr,
 	  printf("no lpm match found \n");
           /* no match found, send ICMP net unreachable */
           sr_send_icmp_error(3, 0, sr, packet);
+	  
         } else {
           /* match found, check ARP cache */
 	  printf("lpm match found \n");
@@ -364,38 +366,112 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
 
   struct sr_ip_hdr *orig_ip_header = (sr_ip_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
+
+
+  printf("before get interface \n");
+  /* get interface */
+  char * interface;
+  struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
+  if (iface == 0) {
+  	struct sr_rt *lpm = sr_find_lpm(sr->routing_table, orig_ip_header->ip_src);
+	if (!lpm){
+		printf("I COULDN'T FIND THE GUY WHO SENT ME THIS. WHAT THE HECK \n\n");
+	}
+	
+	iface = sr_get_interface(sr, lpm->interface);
+	
+	
+
+  }
+  printf(" \n \n Lets print the iface address \n");
+  print_hdrs(packet, 98);
+  
+  interface = iface->name; 
+  sr_print_if(iface);
+  printf(" \n \n Lets print the iface address \n");
+   
+  print_addr_eth(iface->addr);
+  printf(" \n \n Lets print the packet + 6 \n");
+  
+  print_addr_eth(packet+6);
+  
+  memcpy(icmp_packet, packet+6, ETHER_ADDR_LEN);
+  
+  memcpy(icmp_packet+6, iface->addr, ETHER_ADDR_LEN);
+   
+  eth_header->ether_type = htons(ethertype_ip);
+ 
+
+
+  ip_header->ip_v = 4;
+  ip_header->ip_hl = sizeof(sr_ip_hdr_t)/4;
+  
+  ip_header->ip_tos = 0;
+  ip_header->ip_len = htons(sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
+  
+  ip_header->ip_id = 0;
+  ip_header->ip_off = htons(IP_DF);
+  
+  
+  ip_header->ip_ttl = 100;
+  
+  ip_header->ip_p = ip_protocol_icmp;
+  
+  ip_header->ip_dst = orig_ip_header->ip_src;
+  
+  ip_header->ip_src = iface->ip;
+  
+  ip_header->ip_sum = calc_ip_cksum(ip_header);
+  
+  
+  
+  
+/*
+  
+    uint8_t ip_tos;			type of service 
+    uint16_t ip_len;			total length 
+    uint16_t ip_id;			identification 
+    uint16_t ip_off;			 fragment offset field 
+#define	IP_RF 0x8000			 reserved fragment flag 
+#define	IP_DF 0x4000			 dont fragment flag 
+#define	IP_MF 0x2000			 more fragments flag 
+#define	IP_OFFMASK 0x1fff		 mask for fragmenting bits 
+    uint8_t ip_ttl;			 time to live 
+    uint8_t ip_p;			 protocol 
+    uint16_t ip_sum;			 checksum 
+    uint32_t ip_src, ip_dst;	 source and dest address 
+  } __attribute__ ((packed)) ;
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  */
+  
+  
+  
   printf("before icmp3_header set \n");
   icmp3_header->icmp_type = icmp_type;
   icmp3_header->icmp_code = icmp_code;
   memcpy(icmp3_header->data, orig_ip_header, 28);
+  
   icmp3_header->icmp_sum = calc_icmp3_cksum(icmp3_header);
+  
+  
 
-  printf("before get interface \n");
-  /* get interface */
-  struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
-  /*if (iface == 0) {
-    
-  }*/
- 
-  ip_header->ip_v = 4;
-  ip_header->ip_hl = sizeof(sr_ip_hdr_t)/4;
-  ip_header->ip_ttl = 100;
-  ip_header->ip_dst = orig_ip_header->ip_src;
-  ip_header->ip_sum = calc_ip_cksum(ip_header);
-
-  printf("ip header: \n");
-  print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
-
-  uint8_t *eth_src = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(eth_src, eth_header->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-
-  memcpy(eth_header->ether_shost, eth_header->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(eth_header->ether_dhost, eth_src, sizeof(uint8_t) * ETHER_ADDR_LEN);
-
-  free(eth_src);
+  printf("before crazy memcpy: \n");
+  print_hdrs(icmp_packet, len);
+  /*print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));*/
+  
 
   printf("before send packet \n");
-  sr_send_packet(sr, icmp_packet, len, iface->name);
+  sr_send_packet(sr, icmp_packet, len, interface);
 
   printf("before free packet \n");
   free(icmp_packet);

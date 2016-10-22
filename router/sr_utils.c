@@ -50,7 +50,7 @@ uint16_t calc_icmp3_cksum(struct sr_icmp_t3_hdr *icmp3_header) {
 
   currCksum = icmp3_header->icmp_sum; 
   icmp3_header->icmp_sum = 0;
-  newCksum = cksum(icmp3_header, sizeof(sr_icmp_hdr_t));
+  newCksum = cksum(icmp3_header, sizeof(sr_icmp_t3_hdr_t));
   icmp3_header->icmp_sum = currCksum;
 
   return newCksum;
