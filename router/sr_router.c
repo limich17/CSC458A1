@@ -346,6 +346,9 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   ip_header->ip_src = iface->ip;
   ip_header->ip_sum = calc_ip_cksum(ip_header);
 
+  printf("ip header: \n");
+  print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
+
   uint8_t *eth_src = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
   memcpy(eth_src, eth_header->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
@@ -354,6 +357,7 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
 
   free(eth_src);
 
+  printf("before send packet \n");
   sr_send_packet(sr, icmp_packet, len, iface->name);
 
 }
