@@ -11,15 +11,96 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 
-#include "sr_utils.h" /*  only to print IP, can remove later */
-
 /* 
   This function gets called every second. For each request sent out, we keep
   checking whether we should resend an request or destroy the arp request.
   See the comments in the header file for an idea of what it should look like.
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
-    /* Fill this in */
+    struct sr_arpcache *cache = &sr->cache;
+    struct sr_arpreq *request = cache->requests;
+    while (request) {
+        handle_arpreq(request, sr);
+        struct sr_arpreq *next_req = request->next;
+        request = next_req;
+    }
+    return;
+}
+
+
+void handle_arpreq (struct sr_arpreq *request, struct sr_instance *state) {
+    struct sr_packet *packet = request->packets;
+
+    time_t current_time;
+    time(&current_time);
+    double difference;
+    difference = difftime(current_time, request->sent);
+
+    if (difference >= 1.0){
+        if ((request->times_sent) < 5) {
+
+            send_arp(request, state);
+
+        } else {
+            printf("The arp request has been sent more than 5 times\n");
+            while (packet) {
+
+
+                /*send_icmp_error(); */
+
+                packet = packet->next;
+            }
+
+            sr_arpreq_destroy(&state->cache, request); 
+        }
+
+    
+        request->sent = current_time;
+        request->times_sent = request->times_sent + 1;
+    }
+    return;   
+}
+void send_arp(struct sr_arpreq *request, struct sr_instance *state) {
+
+    struct sr_packet *packet = request->packets;
+    struct sr_if *target_interface = sr_get_interface(state, packet->iface);
+    int packet_length = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    uint8_t *new_packet = (uint8_t *) malloc(packet_length);
+    sr_ethernet_hdr_t *new_ethernet_header = (sr_ethernet_hdr_t *) new_packet;
+
+    memcpy(new_ethernet_header->ether_shost, target_interface, sizeof(sr_ethernet_hdr_t)); 
+    
+    printf("--------------Sending ARP Packet--------------\n");
+    int i;
+    for (i = 0; i < ETHER_ADDR_LEN; i++) {
+        new_ethernet_header->ether_dhost[i] = 255;
+    }
+
+    new_ethernet_header->ether_type = htons(ethertype_arp);
+
+    sr_arp_hdr_t *new_arp_header = (sr_arp_hdr_t *) ((char *) new_packet + sizeof(sr_ethernet_hdr_t));
+
+    int q;
+    for (q = 0; q < ETHER_ADDR_LEN; q++){
+        new_arp_header->ar_tha[q] = 255;
+    }
+    new_arp_header->ar_sip = target_interface->ip;
+    new_arp_header->ar_tip = request->ip;
+    new_arp_header->ar_hln = ETHER_ADDR_LEN;
+    new_arp_header->ar_pln = 4;
+    new_arp_header->ar_hrd = htons(arp_hrd_ethernet);
+    new_arp_header->ar_pro = htons(ethertype_ip);
+    new_arp_header->ar_op = htons(arp_op_request); 
+    
+    memcpy(new_arp_header->ar_sha, target_interface->addr, ETHER_ADDR_LEN);
+
+
+    sr_send_packet(state, new_packet, packet_length, target_interface->name);
+
+
+
+    free(new_packet);
+    return;
 }
 
 /* You should not need to touch the rest of this code. */
@@ -247,6 +328,8 @@ void *sr_arpcache_timeout(void *sr_ptr) {
     return NULL;
 }
 
+<<<<<<< HEAD
+=======
 void handle_arpreq(struct sr_arpreq *req, struct sr_instance *sr) {
 /*
        if difftime(now, req->sent) > 1.0
@@ -286,3 +369,4 @@ struct sr_arpreq {
 
 
 
+>>>>>>> 68d56a76e97e4f503f1972bbc2ccf72b48ab7d7e
