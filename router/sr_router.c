@@ -414,8 +414,6 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   
   print_addr_eth(packet+6);
   
-  memcpy(icmp_packet, packet+6, ETHER_ADDR_LEN);
-  
   memcpy(icmp_packet+6, iface->addr, ETHER_ADDR_LEN);
    
   eth_header->ether_type = htons(ethertype_ip);
@@ -488,6 +486,34 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   print_hdrs(icmp_packet, len);
   /*print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));*/
   
+  struct sr_arpentry* entry = sr_arpcache_lookup(&(sr->cache), ip_header->ip_dst);
+
+	if (entry){
+	printf("I found the ICMP target ip in my cache! Sending it forward to next hop \n");
+	/* Send the ICMP now */
+	
+		memcpy(icmp_packet, entry->mac, ETHER_ADDR_LEN);
+
+		sr_send_packet(sr, icmp_packet, len, interface);
+	
+	
+	
+    }
+   	else{
+   		/* Must create an ARP request below. Calling quereq makes a new request. COPY PACKET WITH MEMCPY */
+		struct sr_arpreq *req;
+	printf("I didn't find ICMP target. Putting it in my queue, and sending ARP request.\n");	
+		printf("\n\n\n");
+		
+		
+		
+
+       		req = sr_arpcache_queuereq(&(sr->cache), ip_header->ip_dst, icmp_packet, len, interface);
+		/* now send the req through a function. Keep sending it every second for 5 seconds: */
+       
+       		handle_arpreq(req, sr); /* doesn't work yet */
+  	 }
+
 
   printf("before send packet \n");
   sr_send_packet(sr, icmp_packet, len, interface);
