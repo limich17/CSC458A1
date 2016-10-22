@@ -361,17 +361,17 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
 }
 
 void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int len, char *interface) {
-	uint8_t *echo_reply = malloc(len);
-	echo_reply = packet;
+	/*uint8_t *echo_reply = malloc(len);
+	echo_reply = packet;*/
 	
-  struct sr_icmp_hdr *icmp_header = (struct sr_icmp_hdr *) (echo_reply + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+  struct sr_icmp_hdr *icmp_header = (struct sr_icmp_hdr *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	icmp_header->icmp_type = 0;
 	icmp_header->icmp_code = 0;
 	icmp_header->icmp_sum = calc_icmp_cksum(icmp_header);
 	
 	struct sr_if *iface = sr_get_interface(sr, interface);
 	
-  struct sr_ip_hdr *ip_header = (struct sr_ip_hdr *) (echo_reply + sizeof(sr_ethernet_hdr_t));
+  struct sr_ip_hdr *ip_header = (struct sr_ip_hdr *) (packet + sizeof(sr_ethernet_hdr_t));
   ip_header->ip_id = 0;
   ip_header->ip_off = 0;
 	ip_header->ip_ttl = 64;
@@ -384,7 +384,7 @@ void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int le
 	printf("ip_src interface: %s \n", iface->name);
 	print_addr_ip_int(iface->ip);
 	
-  struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) echo_reply;
+  struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) packet;
 	uint8_t *eth_src = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
 	memcpy(eth_src, eth_header->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
@@ -393,11 +393,11 @@ void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int le
 
 	free(eth_src);
 	
-	print_hdrs(echo_reply, len);
+	print_hdrs(packet, len);
 
-	sr_send_packet(sr, echo_reply, len, interface);
+	sr_send_packet(sr, packet, len, interface);
 
-  free(echo_reply);
+  /* free(echo_reply); */
 	
 	printf("sent echo reply \n");
 }
