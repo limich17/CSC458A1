@@ -270,7 +270,7 @@ void sr_handlepacket(struct sr_instance* sr,
       if (ip_header->ip_ttl < 1) {
         /* TTL is 0 */
         /* send ICMP error */
-        sr_send_icmp_error(11, 0, sr, packet, ip_header->ip_src);
+        sr_send_icmp_error(11, 0, sr, packet);
       } else {
         /* recompute checksum over modified header */
         ip_header->ip_sum = calc_ip_cksum(ip_header);
@@ -283,7 +283,7 @@ void sr_handlepacket(struct sr_instance* sr,
         if (!matchResult) {
 	  printf("no lpm match found \n");
           /* no match found, send ICMP net unreachable */
-          sr_send_icmp_error(3, 0, sr, packet, ip_header->ip_src);
+          sr_send_icmp_error(3, 0, sr, packet);
         } else {
           /* match found, check ARP cache */
 	  printf("lpm match found \n");
@@ -338,7 +338,7 @@ void sr_handlepacket(struct sr_instance* sr,
 				  sr_send_echo_reply(sr, packet, len, interface);
 			  } else if (type == 6 || type == 17) {
 				  printf("is TCP or UDP \n");
-				  sr_send_icmp_error(3, 3, sr, packet, ip_header->ip_src);
+				  sr_send_icmp_error(3, 3, sr, packet);
 			  }
 		  }
 	}
@@ -372,7 +372,7 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
 
   printf("before get interface \n");
   /* get interface */
-  //struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
+  struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
   /*if (iface == 0) {
     
   }*/

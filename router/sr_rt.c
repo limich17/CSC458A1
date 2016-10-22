@@ -25,7 +25,9 @@
 struct sr_rt *sr_find_lpm(struct sr_rt *rt, uint32_t dest_ip) {
     struct sr_rt *match = NULL;
 
-	printf("dest_ip: %0X \n", htonl(dest_ip));
+    printf("dest_ip: \n");
+
+    print_addr_ip_int(htonl(dest_ip));	
     while (rt) {
        if ((ntohl(dest_ip) & ntohl(rt->mask.s_addr)) == ntohl(rt->dest.s_addr)) {
                 printf("equal lpm\n");
