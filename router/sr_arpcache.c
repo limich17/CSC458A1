@@ -47,7 +47,7 @@ void handle_arpreq (struct sr_arpreq *request, struct sr_instance *state) {
             while (packet) {
 
 
-                /*send_icmp_error(); */
+                sr_send_icmp_error(3, 1, state, packet->buf);
 
                 packet = packet->next;
             }

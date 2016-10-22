@@ -326,23 +326,42 @@ void sr_handlepacket(struct sr_instance* sr,
 
     } else {
       /* destination is one of our interfaces */
-	  printf("for me");
+	  printf("for me \n");
 	  
-		  if (ip_protocol((packet + sizeof(sr_ethernet_hdr_t))) == ip_protocol_icmp) {
-			  printf("is ICMP packet \n");
-			  sr_icmp_hdr_t *icmp_header = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-			  
-			  uint8_t type = icmp_header->icmp_type;
-			  
-			  if (type == 8) {
-				  printf("is ICMP echo request \n");
-				  /* check checksum */
-				  sr_send_echo_reply(sr, packet, len, interface);
-			  } else if (type == 6 || type == 17) {
-				  printf("is TCP or UDP \n");
-				  sr_send_icmp_error(3, 3, sr, packet);
-			  }
-		  }
+  	  uint8_t protocol = ip_protocol((packet + sizeof(sr_ethernet_hdr_t)));
+
+  	  printf("protocol: %u \n", protocol);
+  	  switch (protocol) {
+  	  	case ip_protocol_icmp:
+  	  		printf("is ICMP packet \n");
+			sr_icmp_hdr_t *icmp_header = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+			uint8_t type = icmp_header->icmp_type;
+
+			if (type == 8) {
+			  printf("is ICMP echo request \n");
+			  /* check checksum */
+			  sr_send_echo_reply(sr, packet, len, interface);
+		    } 
+
+		    break;
+
+		case ip_protocol_tcp:
+		    printf("is TCP \n");
+			sr_send_icmp_error(3, 3, sr, packet);
+
+			break;
+		case ip_protocol_udp:
+			printf("is UDP \n");
+			sr_send_icmp_error(3, 3, sr, packet);
+
+			break;
+
+	    default:
+	    	printf("WHAT IS THIS\n");
+	    	break;
+  	   }
+
+  	   printf("CASE CLOSED\n");
 	}
 	  
   }
@@ -503,18 +522,42 @@ void sr_send_echo_reply(struct sr_instance *sr, uint8_t *packet, unsigned int le
 	printf("ip_src interface: %s \n", iface->name);
 	print_addr_ip_int(iface->ip);
 	
-  struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) packet;
-	uint8_t *eth_src = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-	memcpy(eth_src, eth_header->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+    struct sr_ethernet_hdr *eth_header = (struct sr_ethernet_hdr *) packet;
+	
+	struct sr_arpentry* entry = sr_arpcache_lookup(&(sr->cache), ip_header->ip_dst);
 
-	memcpy(eth_header->ether_shost, eth_header->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-	memcpy(eth_header->ether_dhost, eth_src, sizeof(uint8_t) * ETHER_ADDR_LEN);
+	memcpy(eth_header->ether_shost, eth_header->ether_dhost, ETHER_ADDR_LEN);
 
-	free(eth_src);
+	if (entry){
+	printf("I found the ICMP target ip in my cache! Sending it forward to next hop \n");
+	/* Send the ICMP now */
+	
+		memcpy(eth_header->ether_dhost, entry->mac, ETHER_ADDR_LEN);
+
+		sr_send_packet(sr, packet, len, interface);
+	
+	
+	
+    }
+   	else{
+   		/* Must create an ARP request below. Calling quereq makes a new request. COPY PACKET WITH MEMCPY */
+		struct sr_arpreq *req;
+	printf("I didn't find ICMP target. Putting it in my queue, and sending ARP request.\n");	
+		printf("\n\n\n");
+		
+		
+		
+
+       		req = sr_arpcache_queuereq(&(sr->cache), ip_header->ip_dst, packet, len, interface);
+		/* now send the req through a function. Keep sending it every second for 5 seconds: */
+       
+       		handle_arpreq(req, sr); /* doesn't work yet */
+  	 }
+	
 	
 	print_hdrs(packet, len);
 
-	sr_send_packet(sr, packet, len, interface);
+	
 
   /* free(echo_reply); */
 	
