@@ -390,18 +390,15 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   printf("before get interface \n");
   /* get interface */
   char * interface;
-  struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
-  if (iface == 0) {
+
   	struct sr_rt *lpm = sr_find_lpm(sr->routing_table, orig_ip_header->ip_src);
+
 	if (!lpm){
 		printf("I COULDN'T FIND THE GUY WHO SENT ME THIS. WHAT THE HECK \n\n");
 	}
 	
-	iface = sr_get_interface(sr, lpm->interface);
-	
-	
+  struct sr_if *iface = sr_get_interface(sr, lpm->interface);
 
-  }
   printf(" \n \n Lets print the iface address \n");
   print_hdrs(packet, 98);
   
