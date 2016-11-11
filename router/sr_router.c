@@ -495,9 +495,15 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   printf("before icmp3_header set \n");
   icmp3_header->icmp_type = icmp_type;
   icmp3_header->icmp_code = icmp_code;
+  
+  
+  
   memcpy(icmp3_header->data, orig_ip_header, 28);
   
+  
+  
   icmp3_header->icmp_sum = calc_icmp3_cksum(icmp3_header);
+  
   
   
 
