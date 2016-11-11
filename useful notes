@@ -27,4 +27,12 @@ Now commands:
 
 client ping -c 3 192.168.2.2
 
+SolutionFull:
+
+eth3    HWaddr 1a:94:c8:42:de:fa
+        inet addr 10.0.1.1
+eth2    HWaddr e2:77:bd:89:af:ea
+        inet addr 172.64.3.1
+eth1    HWaddr 22:d7:07:75:66:da
+        inet addr 192.168.2.1
 
