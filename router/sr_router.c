@@ -390,15 +390,25 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   printf("before get interface \n");
   /* get interface */
   char * interface;
-
+  struct sr_if *iface = sr_get_interface_by_ip(sr, orig_ip_header->ip_src);
+  
+  
+  
+  
+  if (iface == 0) {
   	struct sr_rt *lpm = sr_find_lpm(sr->routing_table, orig_ip_header->ip_src);
-
 	if (!lpm){
 		printf("I COULDN'T FIND THE GUY WHO SENT ME THIS. WHAT THE HECK \n\n");
 	}
 	
-  struct sr_if *iface = sr_get_interface(sr, lpm->interface);
+	iface = sr_get_interface(sr, lpm->interface);
+	
+	if (!iface){
+		iface = sr_get_interface_by_ip(sr, lpm->interface);
+	}
+	
 
+  }
   printf(" \n \n Lets print the iface address \n");
   print_hdrs(packet, 98);
   
@@ -412,6 +422,7 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   print_addr_eth(packet+6);
   
   memcpy(icmp_packet+6, iface->addr, ETHER_ADDR_LEN);
+   
    
   eth_header->ether_type = htons(ethertype_ip);
  
@@ -433,7 +444,18 @@ void sr_send_icmp_error(uint8_t icmp_type, uint8_t icmp_code, struct sr_instance
   
   ip_header->ip_dst = orig_ip_header->ip_src;
   
-  ip_header->ip_src = iface->ip;
+  if (icmp_type == 3 && icmp_code == 3) {
+	/* is TCP/UDP, port unreachable */  
+	ip_header->ip_src = orig_ip_header->ip_dst;
+  } else {
+	ip_header->ip_src = iface->ip;  
+  }
+  
+  
+
+  
+  icmp3_header->unused = 0;
+  icmp3_header->next_mtu = 0;
   
   ip_header->ip_sum = calc_ip_cksum(ip_header);
   
